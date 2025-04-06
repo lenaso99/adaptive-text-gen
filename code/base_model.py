@@ -10,7 +10,7 @@ Experimenting with base models, no finetuning or prompting.
 '''
 
 # Remove token from code before uploading to GitHub; this is to get access to the models
-hf_token = "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"
+hf_token = "..."
 
 # Load model of choice
 ## LLama 2 variants
