@@ -17,6 +17,7 @@ Contains the code for the term project for the class Computational Linguistics, 
 ├── notebooks
 │   ├── preprocess_data.ipynb
 ├── results
+├── .gitignore
 └── README.md
 ```
 
