@@ -97,10 +97,12 @@ def chat_with_openai(model, key):
             print("Invalid API key or insufficient funds. Please check your OpenAI account and perhaps update the .env file with a valid OPENAI API key.")
             break
 
-def chat_with_hf(pipe, token):
+def chat_with_hf(model, token):
     '''
     Chat with 
     '''
+    pipe = pipeline("text-generation", model=model, trust_remote_code=True, token=token)
+
     last_response = "" # here I store just the last response of the model and later explicitly instruct the model to use similar language to this one
     user_texts = ""
     max_sample_chars = 500
@@ -234,11 +236,6 @@ if __name__ == "__main__":
     
     print(f"Loading model {model}...")
     if platform == "Huggingface":
-        if "llama" in model:
-            try:
-                pipe = pipeline("text-generation", model=model, trust_remote_code=True)
-                chat_with_hf(pipe, hf_token)
-            except:
-                print(f"Model is gated and requires access. Please request access to {model} on huggingface.co.")
+        chat_with_hf(model, hf_token)
     else:
         chat_with_openai(model, openai_api_key)
