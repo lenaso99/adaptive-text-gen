@@ -4,6 +4,7 @@ import torch
 
 from datasets import Dataset, load_dataset
 from dotenv import load_dotenv
+from sklearn.model_selection import train_test_split
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments, default_data_collator
 
 load_dotenv("../.env")
@@ -18,13 +19,13 @@ tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, token=hf_token
 tokenizer.pad_token = tokenizer.eos_token
 
 # load data
-eng_train = pd.read_xlsx("data/eng_train.xlsx")
-eng_test = pd.read_xlsx("data/eng_test.xlsx")
-ger_train = pd.read_xlsx("data/ger_train.xlsx")
-ger_test = pd.read_xlsx("data/ger_test.xlsx")
+df_eng = pd.read_xlsx("data/eng_data_with_prompt.xlsx")
+df_ger = pd.read_xlsx("data/ger_data_with_prompt.xlsx")
 
-level_col = "normalized_level"
-text_col = "text"
+eng_train, eng_test = train_test_split(df_eng, test_size=0.2, random_state=42, stratify=df_eng["normalized_level"])
+ger_train, ger_test = train_test_split(df_ger, test_size=0.2, random_state=42, stratify=df_ger["normalized_level"])
+
+#TODO
 
 def tokenize_data(batch):
     inputs = tokenizer(batch["input"], truncation=True, padding="max_length", max_length=128)
