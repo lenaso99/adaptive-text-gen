@@ -8,6 +8,9 @@ __pycache__/
 .venv/
 venv/
 
+# Data
+data/*.xlsx
+
 # Models / outputs
 *.pt
 *.ckpt
