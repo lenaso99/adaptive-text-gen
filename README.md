@@ -17,6 +17,7 @@ Contains the code for the term project for the class Computational Linguistics, 
 ```
 
 ## Versions
+```
 Python: 3.12.3
 
 datasets: 2.20.0
@@ -26,6 +27,7 @@ pandas: 2.2.2
 sklearn: 1.4.2
 transformers: 4.43.2
 torch: 2.3.0+cpu
+```
 
 
 ## Instructions
