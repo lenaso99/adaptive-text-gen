@@ -19,10 +19,10 @@ tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, token=hf_token
 tokenizer.pad_token = tokenizer.eos_token
 
 # load data
-df_eng = pd.read_xlsx("data/eng_data_with_prompt.xlsx")
+eng_data = pd.read_xlsx("data/eng_data_with_prompt.xlsx")
 df_ger = pd.read_xlsx("data/ger_data_with_prompt.xlsx")
 
-eng_train, eng_test = train_test_split(df_eng, test_size=0.2, random_state=42, stratify=df_eng["normalized_level"])
+eng_train, eng_test = train_test_split(eng_data, test_size=0.2, random_state=42, stratify=eng_data["normalized_level"])
 ger_train, ger_test = train_test_split(df_ger, test_size=0.2, random_state=42, stratify=df_ger["normalized_level"])
 
 #TODO

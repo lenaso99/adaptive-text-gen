@@ -9,9 +9,12 @@ __pycache__/
 venv/
 
 # Data
+data/
 data/*.xlsx
 data/*.csv
 data/*.json
+code/base_model.py
+code/finetuning.py
 
 # Models / outputs
 *.pt

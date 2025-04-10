@@ -5,22 +5,10 @@ Contains the code for the term project for the class Computational Linguistics, 
 ```
 .
 ├── code
-│   ├── base_model.py
-│   ├── finetuning.py
 │   └── prompting.py
-├── data
-│   ├── preprocess_data.ipynb
-│   └── pseudoprompts.py
-├── models
 ├── notebooks
 ├── results
-│   ├── falcon-7b-instruct
-│   ├── gpt-4o-mini
-│   │   ├── 
-│   │   └── 
-│   ├── Llama-2-7b-chat-hf
-│   ├── Llama-2-13b-chat-hf
-│   └── ranking_and_scores.py
+│   ├── 
 ├── .gitignore
 └── README.md
 ```
