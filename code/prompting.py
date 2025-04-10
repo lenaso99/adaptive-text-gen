@@ -11,12 +11,6 @@ from huggingface_hub import login
 from openai import OpenAI
 from transformers import pipeline
 
-def get_readability_scores(prompt, text):
-    fkgl = textstat.flesch_kincaid_grade(text)
-    fre = textstat.flesch_reading_ease(text)
-
-    return({"prompt": prompt, "response": text, "fkgl": fkgl, "fre": fre})
-
 def get_gpt_ranking(prompt, command, text1, text2, key):
     client = OpenAI(api_key=key)
     gpt_prompt = f"""You will now be given 2 texts that were written as a response to the same prompt.
@@ -60,6 +54,8 @@ def get_gpt_ranking(prompt, command, text1, text2, key):
         "prompt": prompt,
         "command": command,
         "response": text2,
+        "fkgl": textstat.flesch_kincaid_grade(text2),
+        "fre": textstat.flesch_reading_ease(text2),
         "ranking": ranking,
         "explanation": explanation
     }
@@ -111,8 +107,14 @@ def get_updating_eval(prompt, text1, text2, update, key):
     return {
         "prompt": prompt,
         "base_response": text1,
+        "fkgl_base": textstat.flesch_kincaid_grade(text1),
+        "fre_base": textstat.flesch_reading_ease(text1),
         "update_text": update,
+        "fkgl_text": textstat.flesch_kincaid_grade(update),
+        "fre_text": textstat.flesch_reading_ease(update),
         "updated_response": text2,
+        "fkgl_update": textstat.flesch_kincaid_grade(text2),
+        "fre_update": textstat.flesch_reading_ease(text2),
         "evaluation": ranking,
         "explanation": explanation
     }
@@ -129,9 +131,8 @@ def chat_with_openai(model, key, evaluation_mode):
 
     If evaluation_mode is False, returns nothing, but executes the chat with the model
     If evaluation_mode is True, returns 
-        - a dataframe with readability scores for the responses
-        - a dataframe with the (gpt) rankings of the responses
-        - a dataframe with the evaluation of updating the responses with user text
+        - a dataframe with the (gpt) rankings and scores of the responses
+        - a dataframe with the evaluation of updating the responses with user text, plus their scores
     '''
     system_prompt = f"You are a helpful assistant generating texts at an {difficulty} language level."
     chat_history = [{"role": "system", "content": system_prompt}]
@@ -142,9 +143,8 @@ def chat_with_openai(model, key, evaluation_mode):
     if evaluation_mode:
         last_response_stored = ""
         last_prompt_stored = ""
-        readability_df = pd.DataFrame(columns=["prompt", "response", "fkgl", "fre"])
-        ranking_df = pd.DataFrame(columns=["prompt", "command", "response", "ranking", "explanation"])
-        updating_eval_df = pd.DataFrame(columns=["prompt", "base_response", "update_text", "updated_response", "evaluation", "explanation"])
+        ranking_df = pd.DataFrame(columns=["prompt", "command", "response", "fkgl", "fre" "ranking", "explanation"])
+        updating_eval_df = pd.DataFrame(columns=["prompt", "base_response", "fkgl_base", "fre_base", "update_text", "fkgl_text", "fre_text", "updated_response", "fkgl_update", "fre_update", "evaluation", "explanation"])
 
     print(">>> Welcome to the LLM chat interface! Type your prompt for the model.")
     print(">>> Type 'exit' or 'quit' to end the conversation.")
@@ -183,10 +183,6 @@ def chat_with_openai(model, key, evaluation_mode):
                     gpt_ranking = get_gpt_ranking(last_prompt_stored, command, last_response_stored, reply, key)
                     gpt_ranking_df = pd.DataFrame([gpt_ranking])
                     ranking_df = pd.concat([ranking_df, gpt_ranking_df], ignore_index=True)
-
-                    # get and store readability scores
-                    readability_scores = get_readability_scores(last_response_stored, reply)
-                    readability_df = pd.concat([readability_df, pd.DataFrame([readability_scores])], ignore_index=True)
 
                     last_response_stored = reply # store the last response for evaluation
 
@@ -254,10 +250,6 @@ def chat_with_openai(model, key, evaluation_mode):
                         first_row = pd.DataFrame([{"prompt": user_input, "command": "initial", "response": reply, "ranking": None, "explanation": None}])
                         ranking_df = pd.concat([ranking_df, first_row], ignore_index=True)
 
-                    # get and store readability scores
-                    readability_scores = get_readability_scores(user_input, reply)
-                    readability_df = pd.concat([readability_df, pd.DataFrame([readability_scores])], ignore_index=True)
-
                     last_response_stored = reply # store the last response for evaluation
 
                 print("\n>>> MODEL:\n", reply)
@@ -271,7 +263,7 @@ def chat_with_openai(model, key, evaluation_mode):
             break
 
     if evaluation_mode:
-        return readability_df, ranking_df, updating_eval_df
+        return ranking_df, updating_eval_df
 
 def chat_with_hf(model, token, evaluation_mode, key=None):
     ''''
@@ -284,9 +276,8 @@ def chat_with_hf(model, token, evaluation_mode, key=None):
 
     If evaluation_mode is False, returns nothing, but executes the chat with the model
     If evaluation_mode is True, returns 
-        - a dataframe with readability scores for the responses
-        - a dataframe with the (gpt) rankings of the responses
-        - a dataframe with the evaluation of updating the responses with user text
+        - a dataframe with the (gpt) rankings and scores of the responses
+        - a dataframe with the evaluation of updating the responses with user text, plus their scores
     '''
     pipe = pipeline("text-generation", model=model, trust_remote_code=True, token=token)
 
@@ -297,7 +288,6 @@ def chat_with_hf(model, token, evaluation_mode, key=None):
     if evaluation_mode:
         last_response_stored = ""
         last_prompt_stored = ""
-        readability_df = pd.DataFrame(columns=["prompt", "response", "fkgl", "fre"])
         ranking_df = pd.DataFrame(columns=["prompt", "command", "response", "ranking", "explanation"])
         updating_eval_df = pd.DataFrame(columns=["prompt", "base_response", "update_text", "updated_response", "evaluation", "explanation"])
 
@@ -325,10 +315,6 @@ def chat_with_hf(model, token, evaluation_mode, key=None):
                 gpt_ranking = get_gpt_ranking(last_prompt_stored, command, last_response_stored, generated, key)
                 gpt_ranking_df = pd.DataFrame([gpt_ranking])
                 ranking_df = pd.concat([ranking_df, gpt_ranking_df], ignore_index=True)
-
-                # get and store readability scores
-                readability_scores = get_readability_scores(last_response_stored, generated)
-                readability_df = pd.concat([readability_df, pd.DataFrame([readability_scores])], ignore_index=True)
 
                 last_response_stored = generated # store the last response for evaluation
 
@@ -390,10 +376,6 @@ def chat_with_hf(model, token, evaluation_mode, key=None):
                     first_row = pd.DataFrame([{"prompt": user_input, "command": "initial", "response": generated, "ranking": None, "explanation": None}])
                     ranking_df = pd.concat([ranking_df, first_row], ignore_index=True)
                 
-                # get and store readability scores
-                readability_scores = get_readability_scores(user_input, generated)
-                readability_df = pd.concat([readability_df, pd.DataFrame([readability_scores])], ignore_index=True)
-
                 last_response_stored = generated # store the last response for evaluation
 
             print("\n>>> MODEL:\n", generated)
@@ -405,7 +387,7 @@ def chat_with_hf(model, token, evaluation_mode, key=None):
             last_response = result
     
     if evaluation_mode:
-        return readability_df, ranking_df, updating_eval_df
+        return ranking_df, updating_eval_df
 
 if __name__ == "__main__":
     #TODO: add a sequence of commands to the FKGL calculation so the scores actually mean something;
@@ -487,9 +469,8 @@ if __name__ == "__main__":
     if platform == "Huggingface":
         if evaluation_mode:
             current_datetime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-            readability, ranking, updating = chat_with_hf(model, hf_token, evaluation_mode=True, key=openai_api_key)
+            ranking, updating = chat_with_hf(model, hf_token, evaluation_mode=True, key=openai_api_key)
 
-            readability.to_excel(f"results/{model.split("/")[1]}/readability_scores_{current_datetime}.xlsx", index=False)
             ranking.to_excel(f"results/{model.split("/")[1]}/ranking_scores_{current_datetime}.xlsx", index=False)
             updating.to_excel(f"results/{model.split("/")[1]}/updating_scores_{current_datetime}.xlsx", index=False)
         else:
@@ -498,9 +479,8 @@ if __name__ == "__main__":
     else:
         if evaluation_mode:
             current_datetime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-            readability, ranking, updating = chat_with_openai(model, openai_api_key, evaluation_mode=True)
+            ranking, updating = chat_with_openai(model, openai_api_key, evaluation_mode=True)
 
-            readability.to_excel(f"results/{model}/readability_scores_{current_datetime}.xlsx", index=False)
             ranking.to_excel(f"results/{model}/ranking_scores_{current_datetime}.xlsx", index=False)
             updating.to_excel(f"results/{model}/updating_scores_{current_datetime}.xlsx", index=False)
         else:

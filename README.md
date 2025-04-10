@@ -16,9 +16,8 @@ Contains the code for the term project for the class Computational Linguistics, 
 ├── results
 │   ├── falcon-7b-instruct
 │   ├── gpt-4o-mini
-│   │   ├── ranking_scores_2025-04-10-16-11.xlsx
-│   │   ├── readability_scores_2025-04-10-16-11.xlsx
-│   │   └── updating_scores_2025-04-10-16-11.xlsx
+│   │   ├── 
+│   │   └── 
 │   ├── Llama-2-7b-chat-hf
 │   ├── Llama-2-13b-chat-hf
 │   └── ranking_and_scores.py
