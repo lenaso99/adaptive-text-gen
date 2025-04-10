@@ -25,6 +25,7 @@ huggingface_hub: 0.27.0
 openai: 1.7.2
 pandas: 2.2.2
 sklearn: 1.4.2
+textstat: 0.7.2
 transformers: 4.43.2
 torch: 2.3.0+cpu
 ```

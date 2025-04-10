@@ -8,12 +8,15 @@ from transformers import pipeline
 load_dotenv("../.env")
 hf_token = os.getenv("HUGGINGFACE_TOKEN")
 
+# load datasets
 eng_data = pd.read_excel("../data/eng_data.xlsx")
 ger_data = pd.read_excel("../data/ger_data.xlsx")
 
+# load model...
 model = "meta-llama/Llama-2-13b-chat-hf"
 pipe = pipeline("text-generation", model=model, trust_remote_code=True, token=hf_token)
 
+# generate responses with pipeline
 eng_responses = []
 for _, row in eng_data.iterrows():
     text = row["text"]

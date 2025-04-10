@@ -10,15 +10,19 @@ from transformers import pipeline
 
 def chat_with_openai(model, key):
     '''
-    Load gpt model; gpt models are state of the art & prompting with them can be very effective
-    these do not serve as a baseline necessarily as I cannot finetune them
-    but they propose an upper bound for prompting
+    A function to chat with OpenAI's chat models.
+
+    As parameters, it takes:
+        - model [str]: the gpt model to be used
+        - key [str]: the openai api key to be used for the model
+
+    It returns nothing, but executes the chat with the model.
     '''
     system_prompt = f"You are a helpful assistant generating texts at an {difficulty} language level."
     chat_history = [{"role": "system", "content": system_prompt}]
     user_texts = []
 
-    client = OpenAI(api_key=openai_api_key)
+    client = OpenAI(api_key=key)
 
     print(">>> Welcome to the LLM chat interface! Type your prompt for the model.")
     print(">>> Type 'exit' or 'quit' to end the conversation.")
@@ -43,7 +47,7 @@ def chat_with_openai(model, key):
                 chat_history.append(feedback_prompt)
 
                 response = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model=model,
                     messages=chat_history
                 )
 
@@ -67,7 +71,7 @@ def chat_with_openai(model, key):
                     "content": f"Please adapt the previous response to match the style of the following text: {user_text}."
                 }
 
-                chat_history.append(adapt_prompt)
+                chat_history.append(adapt_prompt) 
 
                 print("\n>>> Thank you! The model will now adapt its language to your writing style.")
                 print("\n\n>>> Type your prompt for the model.")
@@ -82,7 +86,7 @@ def chat_with_openai(model, key):
                 chat_history.append({"role": "user", "content": user_input})
 
                 response = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model=model,
                     messages=chat_history
                 )
 
@@ -98,8 +102,14 @@ def chat_with_openai(model, key):
             break
 
 def chat_with_hf(model, token):
-    '''
-    Chat with 
+    ''''
+    A function to chat with any model from huggingface.
+
+    As parameters, it takes:
+        - model [str]: the model to be used
+        - token [str]: the huggingface token to be used for model loading
+
+    It returns nothing, but executes the chat with the model.
     '''
     pipe = pipeline("text-generation", model=model, trust_remote_code=True, token=token)
 
