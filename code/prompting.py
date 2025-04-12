@@ -7,9 +7,7 @@ import pandas as pd
 import re
 import textstat
 from dotenv import load_dotenv
-from huggingface_hub import login
 from openai import OpenAI
-from transformers import pipeline
 
 def get_gpt_ranking(prompt, command, text1, text2, key):
     client = OpenAI(api_key=key)
@@ -126,7 +124,7 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
 
     As parameters, it takes:
         - model [str]: the gpt model to be used
-        - prompt_mode [str]: the prompt mode to be used ("zero-shot", "few-shot" or "cot")
+        - prompt_mode [str]: the prompt mode to be used ("zero-shot", "few-shot" or "reasoning")
         - key [str]: the openai api key to be used for the model
         - evaluation_mode [bool]: if True, the model will be evaluated
 
@@ -144,7 +142,7 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
     if evaluation_mode:
         last_response_stored = ""
         last_prompt_stored = ""
-        ranking_df = pd.DataFrame(columns=["prompt", "command", "response", "fkgl", "fre" "ranking", "explanation"])
+        ranking_df = pd.DataFrame(columns=["prompt", "command", "response", "fkgl", "fre", "ranking", "explanation"])
         updating_eval_df = pd.DataFrame(columns=["prompt", "base_response", "fkgl_base", "fre_base", "update_text", "fkgl_text", "fre_text", "updated_response", "fkgl_update", "fre_update", "evaluation", "explanation"])
 
     print(">>> Welcome to the LLM chat interface! Type your prompt for the model.")
@@ -156,18 +154,24 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
 
         if user_input.lower() in ["exit", "quit"]:
             break
-        
+        elif user_input.lower() in ["reset"]:
+            print(">>> Resetting chat history...")
+            chat_history = [{"role": "system", "content": system_prompt}]
+            user_texts = []
+            print("\n>>> Type your prompt for the model.")
+            continue
+
         try:
         # Handle feedback
-            if user_input.lower() in ["too simple", "too difficult", "just right"]:
+            if user_input.lower() in ["too simple", "too easy", "too difficult", "too advanced", "just right"]:
                 feedback = user_input.lower()
 
                 if prompt_mode == "zero-shot":
                     feedback_prompt = {
                         "role": "user",
                         "content": f"The previous output was '{feedback}'. Please regenerate the response with { 
-                            'more advanced' if feedback == 'too simple' else 
-                            'simpler' if feedback == 'too difficult' else 
+                            'more advanced' if feedback == 'too simple' or feedback == "too easy" else 
+                            'simpler' if feedback == 'too difficult' or feedback == "too advanced" else 
                             'the same' } language."
                     }
 
@@ -198,10 +202,17 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                             """
                     }
 
-                elif prompt_mode == "cot":
-                    pass
+                elif prompt_mode == "reasoning":
+                    feedback_prompt = {
+                        "role": "user",
+                        "content": f"""The previous output was '{feedback}'. Please regenerate the response with { 
+                            'more advanced' if feedback == 'too simple' else 
+                            'simpler' if feedback == 'too difficult' else 
+                            'the same' } language.
+                            Let's think about this step by step!"""
+                    }
                 else:
-                    raise ValueError("Invalid prompt mode. Choose between 'zero-shot', 'few-shot' or 'cot'.")
+                    raise ValueError("Invalid prompt mode. Choose between 'zero-shot', 'few-shot' or 'reasoning'.")
                 
                 chat_history.append(feedback_prompt)
 
@@ -226,6 +237,7 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                 chat_history.append({"role": "assistant", "content": reply})
                 print("\n\n>>> Type your prompt for the model.")
                 print(">>> Type 'exit' or 'quit' to end the conversation.")
+                print(">>> Type 'reset' to reset the chat history.")
                 print(">>> To give the model feedback and adjust its language, rate the previous response by typing 'too simple', 'too difficult', or 'just right'.")
                 print(">>> To pass the model a new text, allowing it to adjust its language to you, type 'update'.")
             
@@ -235,6 +247,8 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
 
                 user_text = input(">>> Your text: ")
                 user_texts.append(user_text)
+
+                print("\n>>> Thank you! The model will now adapt its language to your writing style...")
 
                 if prompt_mode == "zero-shot":
                     adapt_prompt = {
@@ -265,10 +279,14 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                             """
                     }
                     
-                elif prompt_mode == "cot":
-                    pass
+                elif prompt_mode == "reasoning":
+                    adapt_prompt = {
+                        "role": "user",
+                        "content": f"""Please adapt the previous response to match the style of the following text: {user_text}.
+                            Let's think about this step by step!"""
+                    }
                 else:
-                    raise ValueError("Invalid prompt mode. Choose between 'zero-shot', 'few-shot' or 'cot'.")
+                    raise ValueError("Invalid prompt mode. Choose between 'zero-shot', 'few-shot' or 'reasoning'.")
 
                 chat_history.append(adapt_prompt) 
 
@@ -282,11 +300,12 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                 if evaluation_mode:
                     updating_eval = get_updating_eval(last_prompt_stored, last_response_stored, reply, user_text, key)
                     updating_eval_df = pd.concat([updating_eval_df, pd.DataFrame([updating_eval])], ignore_index=True)
-                    
-                print("\n>>> Thank you! The model will now adapt its language to your writing style...")
+
+                last_response_stored = reply # store the last response for evaluation
                 print("\n>>> MODEL:\n", reply)
                 print("\n\n>>> Type your prompt for the model.")
                 print(">>> Type 'exit' or 'quit' to end the conversation.")
+                print(">>> Type 'reset' to reset the chat history.")
                 print(">>> To give the model feedback and adjust its language, rate the previous response by typing 'too simple', 'too difficult', or 'just right'.")
                 print(">>> To pass the model a new text, allowing it to adjust its language to you, type 'update'.")
 
@@ -296,7 +315,8 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                 # with the same language as the previous ones.
                 # The model will try to match the language of the previous messages in the chat history.
 
-                if prompt_mode == "zero-shot":
+                if prompt_mode == "zero-shot" or prompt_mode == "reasoning":
+                    # there's no need for reasoning on a simple prompt, so we can use the same prompt for both modes
                     prompt = user_input
 
                 elif prompt_mode == "few-shot":
@@ -319,11 +339,8 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                         Response:
                     """
 
-                elif prompt_mode == "cot":
-                    pass
-
                 else:
-                    raise ValueError("Invalid prompt mode. Choose between 'zero-shot', 'few-shot' or 'cot'.")
+                    raise ValueError("Invalid prompt mode. Choose between 'zero-shot', 'few-shot' or 'reasoning'.")
 
 
                 chat_history.append({"role": "user", "content": prompt})
@@ -343,7 +360,7 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
 
                     if len(last_response_stored) == 0: # if this is the first prompt...
                         # simply store it as initial prompt in the ranking dataframe
-                        first_row = pd.DataFrame([{"prompt": user_input, "command": "initial", "response": reply, "ranking": None, "explanation": None}])
+                        first_row = pd.DataFrame([{"prompt": user_input, "command": "initial", "response": reply, "fkgl": textstat.flesch_kincaid_grade(reply), "fre": textstat.flesch_reading_ease(reply), "ranking": None, "explanation": None}])
                         ranking_df = pd.concat([ranking_df, first_row], ignore_index=True)
 
                     last_response_stored = reply # store the last response for evaluation
@@ -352,6 +369,7 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                 chat_history.append({"role": "assistant", "content": reply})
                 print("\n\n>>> Type your prompt for the model.")
                 print(">>> Type 'exit' or 'quit' to end the conversation.")
+                print(">>> Type 'reset' to reset the chat history.")
                 print(">>> To give the model feedback and adjust its language, rate the previous response by typing 'too simple', 'too difficult', or 'just right'.")
                 print(">>> To pass the model a new text, allowing it to adjust its language to you, type 'update'.")
         except:
@@ -364,7 +382,6 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
 if __name__ == "__main__":
     difficulty = "intermediate" # initial difficulty level of the model
     # Options: "beginner", "intermediate", "advanced"; or more finegrained!
-
 
     load_dotenv("../.env")
     try:
@@ -386,10 +403,9 @@ if __name__ == "__main__":
 
     #login(token=hf_token)
 
+    model = "gpt-4o-mini"
+
     while True:
-        
-        model = "gpt-4o-mini"
-                
         print(f"Load model {model}. Enter \"proceed\" to proceed. Enter \"exit\" to abort.")
         user_input = input(">>> Load model? ")
         if user_input.lower() == "proceed":
@@ -400,9 +416,9 @@ if __name__ == "__main__":
             print("Invalid input. Please try again.")
             continue
     
-    print("Choose the prompt mode between \"zero-shot\", \"few-shot\" and \"COT\" (Chain-of-Thought):")
+    print("Choose the prompt mode between \"zero-shot\", \"few-shot\" and \"reasoning\" (for zero-shot reasoning):")
     prompt_mode = input(">>> Prompt mode: ").lower()
-    if prompt_mode not in ["zero-shot", "few-shot", "cot"]:
+    if prompt_mode not in ["zero-shot", "few-shot", "reasoning"]:
         print("Invalid input. Please try again.")
         exit()
 
@@ -412,7 +428,16 @@ if __name__ == "__main__":
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
         ranking, updating = chat_with_openai(model, openai_api_key, prompt_mode=prompt_mode, evaluation_mode=True)
 
-        ranking.to_excel(f"results/{model}_{prompt_mode}_ranking_scores_{current_datetime}.xlsx", index=False)
-        updating.to_excel(f"results/{model}_{prompt_mode}_updating_scores_{current_datetime}.xlsx", index=False)
+        if not ranking.empty:
+            ranking.to_excel(f"results/{model}_{prompt_mode}_ranking_scores_{current_datetime}.xlsx", index=False)
+            print(f"Ranking dataframe saved as results/{model}_{prompt_mode}_ranking_scores_{current_datetime}.xlsx")
+        else:
+            print("Ranking dataframe is empty. Skipping save.")
+
+        if not updating.empty:
+            updating.to_excel(f"results/{model}_{prompt_mode}_updating_scores_{current_datetime}.xlsx", index=False)
+            print(f"Updating dataframe saved as results/{model}_{prompt_mode}_updating_scores_{current_datetime}.xlsx")
+        else:
+            print("Updating dataframe is empty. Skipping save.")
     else:
         chat_with_openai(model, openai_api_key, prompt_mode=prompt_mode, evaluation_mode=False)

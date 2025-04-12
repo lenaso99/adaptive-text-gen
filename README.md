@@ -6,34 +6,36 @@ Contains the code for the term project for the class Computational Linguistics, 
 .
 ├── code
 │   └── prompting.py
-├── notebooks
 ├── results
-│   ├── 
+│   ├── gpt-4o-mini_few-shot_ranking_scores_2025-04-12-12-02.xlsx
+│   ├── gpt-4o-mini_few-shot_ranking_scores_2025-04-12-12-04.xlsx
+│   ├── gpt-4o-mini_few-shot_updating_scores_2025-04-12-12-15.xlsx
+│   ├── gpt-4o-mini_reasoning_ranking_scores_2025-04-12-12-06.xlsx
+│   ├── gpt-4o-mini_reasoning_ranking_scores_2025-04-12-12-10.xlsx
+│   ├── gpt-4o-mini_reasoning_updating_scores_2025-04-12-12-18.xlsx
+│   ├── gpt-4o-mini_zero-shot_ranking_scores_2025-04-12-11-58.xlsx
+│   ├── gpt-4o-mini_zero-shot_ranking_scores_2025-04-12-12-00.xlsx
+│   └── gpt-4o-mini_zero-shot_updating_scores_2025-04-12-12-12.xlsx
 ├── .gitignore
-└── README.md
+├── README.md
+└── report.pdf
 ```
 
 ## Versions
 ```
 Python: 3.12.3
 
-datasets: 2.20.0
-huggingface_hub: 0.27.0
 openai: 1.7.2
 pandas: 2.2.2
-sklearn: 1.4.2
 textstat: 0.7.2
-transformers: 4.43.2
-torch: 2.3.0+cpu
 ```
 
 
 ## Instructions
 1. Clone the repository.
-2. Create a file called <code>.env</code> in the main directory. In it, store your huggingface token and OPENAI api key as follows:
+2. Create a file called <code>.env</code> in the main directory. In it, store your OPENAI api key as follows:
    
 ```
 OPENAI_API_KEY=<your-openai-api-key-here>
-HF_TOKEN=<your-huggingface-token-here>
 ```
 3. 
