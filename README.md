@@ -5,7 +5,12 @@ Contains the code for the term project for the class Computational Linguistics, 
 ```
 .
 ├── code
+│   ├── finetuning.ipynb
 │   └── prompting.py
+├── data
+│   ├── eng_data.xlsx
+│   ├── preprocess_data.ipynb
+│   └── pseudoprompts.ipynb
 ├── results
 │   ├── gpt-4o-mini_few-shot_ranking_scores_2025-04-12-12-02.xlsx
 │   ├── gpt-4o-mini_few-shot_ranking_scores_2025-04-12-12-04.xlsx
