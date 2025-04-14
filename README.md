@@ -30,9 +30,11 @@ Contains the code for the term project for the class Computational Linguistics, 
 ```
 Python: 3.12.3
 
+datasets: 2.20.0
 openai: 1.7.2
 pandas: 2.2.2
 textstat: 0.7.2
+transformers: 4.43.2
 ```
 
 
