@@ -315,29 +315,9 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                 # with the same language as the previous ones.
                 # The model will try to match the language of the previous messages in the chat history.
 
-                if prompt_mode == "zero-shot" or prompt_mode == "reasoning":
-                    # there's no need for reasoning on a simple prompt, so we can use the same prompt for both modes
+                if prompt_mode == "zero-shot" or prompt_mode == "reasoning" or prompt_mode == "few-shot":
+                    # there's no need for reasoning or few-shot prompting on a simple prompt, so we can use the same prompt for all modes
                     prompt = user_input
-
-                elif prompt_mode == "few-shot":
-                    prompt = f"""Here are some examples of how to respond to prompts:
-                        
-                        Example 1: 
-                        Prompt: How does photosynthesis work?
-                        Response: Photosynthesis is how plants make their food using sunlight, water, and carbon dioxide.
-
-                        Example 2:
-                        Prompt: What is the capital of France?
-                        Response: The capital of France is Paris, which is known for its art, culture, and history.
-
-                        Example 3:
-                        Prompt: What is fine-tuning in the context of LLMs?
-                        Response: Fine-tuning is the process of adjusting a pre-trained model's parameters based on a smaller, task-specific dataset.
-
-                        Now it is your turn:
-                        Prompt: {user_input}
-                        Response:
-                    """
 
                 else:
                     raise ValueError("Invalid prompt mode. Choose between 'zero-shot', 'few-shot' or 'reasoning'.")
