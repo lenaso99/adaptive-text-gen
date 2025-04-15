@@ -8,6 +8,7 @@ Contains the code for the term project for the class Computational Linguistics, 
 │   ├── finetuning.ipynb
 │   └── prompting.py
 ├── data
+│   ├── eng_data_pseudoprompt.xlsx
 │   ├── eng_data.xlsx
 │   ├── preprocess_data.ipynb
 │   └── pseudoprompts.ipynb
@@ -45,4 +46,5 @@ transformers: 4.43.2
 ```
 OPENAI_API_KEY=<your-openai-api-key-here>
 ```
-3. 
+3. Run the file <code>prompting.py</code>; enable <i>Evaluation Mode</i> to generate files in <i>results</i>.
+4. For finetuning, run the cells in <code>finetuning.ipynb</code>.

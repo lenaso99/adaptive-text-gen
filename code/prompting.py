@@ -10,6 +10,20 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 def get_gpt_ranking(prompt, command, text1, text2, key):
+    '''
+    This function takes a prompt, a command (simpler, more advanced or similar), the previously and the newly
+    generated response. It returns whether the newly generated response is in fact <command> compared to the 
+    previous one.
+    As parameters, it takes:
+        - prompt [str]: the prompt used to generate the 2 responses
+        - command [str]: simpler, more advanced or similar
+        - text1 [str]: a text, usually the previous response
+        - text2 [str]: a text, usually the new response
+        - key [str]: the openai api key to be used for the model to evaluate
+
+    Returns 
+        - a dictionary with the rating and a short explanation, as well as FKGL and FRE scores of text1 and text2
+    '''
     client = OpenAI(api_key=key)
     gpt_prompt = f"""You will now be given 2 texts that were written as a response to the same prompt.
                     Your task is rank these two texts on difficulty.\n
@@ -37,9 +51,10 @@ def get_gpt_ranking(prompt, command, text1, text2, key):
     )
     reply = response.choices[0].message.content.strip()
     # parsing the response:
-    # Extract the ranking and explanation from the response
+    # extracting the ranking and explanation from the response
     ranking_match = re.search(r"TEXT 2:\s*(simpler|more advanced|similar)", reply)
     explanation_match = re.search(r"EXPLANATION:\s*(.+)", reply)
+    # I used https://regex101.com/ for these regexes
 
     if ranking_match and explanation_match:
         ranking = ranking_match.group(1)
@@ -59,6 +74,21 @@ def get_gpt_ranking(prompt, command, text1, text2, key):
     }
 
 def get_updating_eval(prompt, text1, text2, update, key):
+    '''
+    This function takes a prompt, the previously and the newly generated responses and a text used to update 
+    the responses of the mode. It returns whether the newly generated response is more similar to the 
+    user-written text.
+    As parameters, it takes:
+        - prompt [str]: the prompt used to generate the 2 responses
+        - text1 [str]: a text, usually the previous response
+        - text2 [str]: a text, usually the new response
+        - update [str]: a text, usually the user-written text used for updating
+        - key [str]: the openai api key to be used for the model to evaluate
+
+    Returns 
+        - a dictionary with the evluation and a short explanation, as well as FKGL and FRE scores of text1, text2 
+            and update
+    '''
     client = OpenAI(api_key=key)
     gpt_prompt = f"""You will now be given 2 texts that were written as a response to the same prompt.
                     Additionally, you will be given a user-written text that the model should adapt to.
@@ -94,6 +124,7 @@ def get_updating_eval(prompt, text1, text2, update, key):
     # Extract the ranking and explanation from the response
     eval_match = re.search(r"TEXT 2:\s*(more similar|less similar|equally similar)", reply)
     explanation_match = re.search(r"EXPLANATION:\s*(.+)", reply)
+    # I used https://regex101.com/ for these regexes
 
     if eval_match and explanation_match:
         ranking = eval_match.group(1)
@@ -116,7 +147,6 @@ def get_updating_eval(prompt, text1, text2, update, key):
         "evaluation": ranking,
         "explanation": explanation
     }
-
 
 def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=False):
     '''
@@ -153,8 +183,11 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
         user_input = input("\n>>> You: ")
 
         if user_input.lower() in ["exit", "quit"]:
+            # ends the conversation (while loop)
+            print(">>> Ending conversation...")
             break
         elif user_input.lower() in ["reset"]:
+            # resets the chat history
             print(">>> Resetting chat history...")
             chat_history = [{"role": "system", "content": system_prompt}]
             user_texts = []
@@ -162,8 +195,8 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
             continue
 
         try:
-        # Handle feedback
             if user_input.lower() in ["too simple", "too easy", "too difficult", "too advanced", "just right"]:
+                # Handle feedback
                 feedback = user_input.lower()
 
                 if prompt_mode == "zero-shot":
@@ -241,8 +274,8 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                 print(">>> To give the model feedback and adjust its language, rate the previous response by typing 'too simple', 'too difficult', or 'just right'.")
                 print(">>> To pass the model a new text, allowing it to adjust its language to you, type 'update'.")
             
-            # Handle user writing for style updates 
             elif user_input.lower() in ["update"]:
+                # Handle user writing for style updates 
                 print(">>> Paste a short text you have written yourself, in your own language:")
 
                 user_text = input(">>> Your text: ")
@@ -298,6 +331,7 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
 
                 reply = response.choices[0].message.content.strip()
                 if evaluation_mode:
+                    # if evaluation mode is on, we need to evaluate the new response compared to the old one and the user text
                     updating_eval = get_updating_eval(last_prompt_stored, last_response_stored, reply, user_text, key)
                     updating_eval_df = pd.concat([updating_eval_df, pd.DataFrame([updating_eval])], ignore_index=True)
 
@@ -309,12 +343,11 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
                 print(">>> To give the model feedback and adjust its language, rate the previous response by typing 'too simple', 'too difficult', or 'just right'.")
                 print(">>> To pass the model a new text, allowing it to adjust its language to you, type 'update'.")
 
-            # Regular prompts...
+            # regular prompts...
             else:
-                # Regular prompt; the chat history of gpt models ensures that future responses are generated
+                # regular prompt; the chat history of gpt models ensures that future responses are generated
                 # with the same language as the previous ones.
-                # The model will try to match the language of the previous messages in the chat history.
-
+                # the model will try to match the language of the previous messages in the chat history.
                 if prompt_mode == "zero-shot" or prompt_mode == "reasoning" or prompt_mode == "few-shot":
                     # there's no need for reasoning or few-shot prompting on a simple prompt, so we can use the same prompt for all modes
                     prompt = user_input
@@ -333,7 +366,7 @@ def chat_with_openai(model, key, prompt_mode = "zero-shot", evaluation_mode=Fals
 
                 reply = response.choices[0].message.content.strip()
 
-                # if the evaluation mode is turned on, do evaluation
+                # if the evaluation mode is turned on, do evaluation -> just get readbility scores of first response
                 if evaluation_mode:
                     
                     last_prompt_stored = user_input
@@ -366,11 +399,12 @@ if __name__ == "__main__":
     load_dotenv("../.env")
     try:
         openai_api_key = os.getenv("OPENAI_API_KEY")
-        openai_chat = True # if True, use OpenAI chat model; if False, use Huggingface model
+        openai_chat = True 
     except:
-        openai_chat = False # if no openai key passed, automatically do not use gpt model
+        raise ValueError("No OpenAI API key found. Please set the OPENAI_API_KEY environment variable in .env file.")
     
     print("Do you want to turn on evaluation mode? (yes/no)")
+    # to generate the ranking and updating dataframes, which are used for analysis
     user_input = input(">>> ")
     if user_input.lower() == "yes":
         if openai_chat:
@@ -386,9 +420,10 @@ if __name__ == "__main__":
     model = "gpt-4o-mini"
 
     while True:
+        # just getting confirmation from user -> probably not necessary?
         print(f"Load model {model}. Enter \"proceed\" to proceed. Enter \"exit\" to abort.")
         user_input = input(">>> Load model? ")
-        if user_input.lower() == "proceed":
+        if user_input.lower() == "proceed" or user_input.lower() == "":
             break
         elif user_input.lower() == "exit":
             break
@@ -409,6 +444,7 @@ if __name__ == "__main__":
         ranking, updating = chat_with_openai(model, openai_api_key, prompt_mode=prompt_mode, evaluation_mode=True)
 
         if not ranking.empty:
+            # this is only generated if there are ever any user updates, otherwise this is empty
             ranking.to_excel(f"results/{model}_{prompt_mode}_ranking_scores_{current_datetime}.xlsx", index=False)
             print(f"Ranking dataframe saved as results/{model}_{prompt_mode}_ranking_scores_{current_datetime}.xlsx")
         else:
